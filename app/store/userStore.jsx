@@ -2,7 +2,7 @@ import Cookies from "js-cookie";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-const userStore = create(
+const useUserStore = create(
   persist(
     (set, get) => ({
       loading: false,
@@ -10,20 +10,26 @@ const userStore = create(
       proofRequests: [],
       connections: [],
       invitation: null,
-      isLoggedIn: localStorage.getItem("Token") ? true : false,// Check sessionStorage
+      isLoggedIn: false, // Initialize without accessing localStorage
+
       ws: null,
       connected: false,
       redirected: false,
 
-      
-      
+      setIsLoggedIn: (value) => set({ isLoggedIn: value }),
+
       clearError: () => set({ error: null }),
     }),
     {
-        name: "verifier-storage", // Unique key for localStorage
-        storage: createJSONStorage(() => localStorage), // Explicitly define localStorage
-      }
+      name: "verifier-storage",
+      storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : null)), // Avoid SSR issue
+      onRehydrateStorage: () => (state) => {
+        if (typeof window !== "undefined") {
+          state.setIsLoggedIn(!!localStorage.getItem("Token")); // Safe access
+        }
+      },
+    }
   )
 );
 
-export default userStore;
+export default useUserStore;
