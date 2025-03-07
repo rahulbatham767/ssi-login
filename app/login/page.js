@@ -8,23 +8,23 @@ const LoginPage = () => {
 
   const { SVG } = useQRCode();
 
-  const { userInvitation, createInvitation, Invitation, connect } =
-    useVerifierStore();
+  const { VerifierReq, invitation, connectWebSocket } = useVerifierStore();
   const handleCopyToClipboard = () => {
-    const invitationLink = JSON.stringify(Invitation.invitation); // Serialize the invitation
+    const invitationLink = JSON.stringify(invitation.invitation); // Serialize the invitation
     navigator.clipboard.writeText(invitationLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000); // Reset the copied state after 2 seconds
   };
-  console.log(Invitation);
+  console.log(invitation);
   useEffect(() => {
-    connect(process.env.NEXT_PUBLIC_VERIFIER_SOCKET, "verifier");
+    connectWebSocket(process.env.NEXT_PUBLIC_VERIFIER_SOCKET, "verifier");
+    connectWebSocket(process.env.NEXT_PUBLIC_HOLDER_SOCKET, "holder");
   }, []);
   useEffect(() => {
-    if (!Invitation || Object.keys(Invitation).length === 0) {
-      createInvitation(); // Create an invitation if not available
+    if (!invitation || Object.keys(invitation).length === 0) {
+      VerifierReq(); // Create an invitation if not available
     }
-  }, [Invitation, createInvitation]);
+  }, [invitation, VerifierReq]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">
@@ -34,9 +34,9 @@ const LoginPage = () => {
         </h1>
 
         <div className="flex justify-center mb-4">
-          {Invitation?.invitation_url ? (
+          {invitation?.invitation_url ? (
             <SVG
-              text={JSON.stringify(Invitation.invitation_url)} // Make sure it's a valid string
+              text={JSON.stringify(invitation.invitation_url)} // Make sure it's a valid string
               options={{
                 margin: 2,
                 width: 200,

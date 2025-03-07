@@ -1,42 +1,29 @@
-// export function Token_Credential_Request(proof) {
-//   const data = {
-//     auto_present: true,
-//     auto_remove: true,
-//     comment: "request for token verification...",
-//     connection_id: proof.connection_id,
-//     presentation_request: {
-//       indy: {
-//         name: "Proof request",
-//         non_revoked: {
-//           from: 1640995199,
-//           to: 1640995199,
-//         },
-//         nonce: "1",
-//         requested_attributes: {
-//           token: {
-//             name: "token",
-//             names: ["token"],
-//             non_revoked: {
-//               from: 1640995199,
-//               to: 1640995199,
-//             },
-//             restrictions: [
-//               {
-//                 token: "5dyaWPcQ5RoddcHH2dpmYE:3:CL:13:token",
-//               },
-//             ],
-//           },
-//         },
-//         requested_predicates: {},
-//         version: "1.0",
-//       },
-//     },
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
-//     trace: false,
-//   };
+export const extractTokenDetails = (token) => {
+  try {
+    const decoded = jwtDecode(token);
+    console.log("Decoded Token:", decoded);
+    return decoded;
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return null;
+  }
+};
 
-//   return data;
-// }
+export async function generateJwtToken(user) {
+  try {
+    const response = await axios.post("/api/generate-token", user);
+    return response.data.token;
+  } catch (error) {
+    console.error(
+      "Error generating JWT token:",
+      error.response?.data || error.message
+    );
+    return null;
+  }
+}
 
 export const generateProofRequest = ({ connection_id, cred_def_id }) => {
   const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
@@ -65,6 +52,7 @@ export const generateProofRequest = ({ connection_id, cred_def_id }) => {
                 cred_def_id, // Correct key for credential definition ID
               },
             ],
+            revealed: true,
           },
         },
         requested_predicates: {},
@@ -130,24 +118,6 @@ export function Issue_Token_Credential(issuer) {
   return payload;
 }
 
-export async function generateJwtToken(user) {
-  try {
-    const response = await axios.post("/api/generate-token", {
-      name: user.name,
-      email: user.email,
-    });
-
-    console.log("Generated token:", response.data.token);
-    return response.data.token; // ✅ Properly returns token
-  } catch (error) {
-    console.error(
-      "Error generating JWT token:",
-      error.response?.data || error.message
-    );
-    return null; // ✅ Ensures function still returns something
-  }
-}
-
 export const generateCredentialPayload = ({
   connection_id,
   token,
@@ -161,6 +131,53 @@ export const generateCredentialPayload = ({
     attributes: [{ name: "token", value: token }],
   },
   filter: {
-    indy: { cred_def_id },
+    indy: { cred_def_id, issuer_did },
   },
 });
+
+export const getCredentialID = async () => {
+  const response = await axios.get(
+    `${process.env.NEXT_PUBLIC_HOLDER_ENDPOINT}/present-proof-2.0/records`
+  );
+  console.log("response from get credential id", response.data);
+  const credential_id = response.data.results[0].pres_ex_id;
+  return credential_id;
+};
+export const getRequestCredential = async (pres_ex_id) => {
+  const response = await axios.get(
+    `${process.env.NEXT_PUBLIC_HOLDER_ENDPOINT}/present-proof-2.0/records/${pres_ex_id}/credentials`
+  );
+  const data = response.data;
+  console.log("response from get request credential", data);
+
+  const cred = data.map((item) => {
+    console.log(
+      "response from get request credential",
+      item?.cred_info?.attrs?.token
+    );
+    return item?.cred_info?.attrs?.token;
+  });
+  return cred;
+};
+
+export const deleteCredentialRequest = async (pres_ex_id) => {
+  const response = await axios.delete(
+    `${process.env.NEXT_PUBLIC_HOLDER_ENDPOINT}/present-proof-2.0/records/${pres_ex_id}`
+  );
+  console.log("response from delete credential request", response.data);
+  return response.data;
+};
+export const convertToNormalDate = (isoTimestamp) => {
+  const date = new Date(isoTimestamp);
+  const options = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    timeZone: "Asia/Kolkata", // Specify the time zone for IST
+  };
+  const formattedDate = new Intl.DateTimeFormat("en-US", options).format(date);
+  return `${formattedDate}`;
+};
