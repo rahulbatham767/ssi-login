@@ -71,6 +71,7 @@ export const handleHolderMessages = async (topic, payload) => {
     console.log("get credential", getCredential);
 
     const extractCred = extractTokenDetails(JSON.stringify(getCredential));
+
     console.log("extracted credential", extractCred);
 
     if (!extractCred) {
@@ -95,7 +96,11 @@ export const handleHolderMessages = async (topic, payload) => {
 
       console.log("Verifier: Proof verification successful", payload);
       toast.dismiss(t.id); // ✅ Now correctly inside function
-      window.location.href = "/";
+      toast.success(
+        `Welcome ${extractTokenDetails(getCredential[0]).name} to SSI Portal`,
+        { style: { textTransform: "capitalize" } }
+      );
+      setTimeout(() => (window.location.href = "/"), 2000);
     };
 
     toast.custom(
@@ -198,7 +203,6 @@ export const handleIssuerMessages = async (topic, payload, token) => {
     payload.connection_id
   ) {
     console.log("Issuer: Processing active connection");
-    console.log(localStorage.getItem("stoken"));
 
     const credentialPayload = generateCredentialPayload({
       connection_id: payload.connection_id,
@@ -214,8 +218,9 @@ export const handleIssuerMessages = async (topic, payload, token) => {
     );
     console.log("response after sending credential offer", res.data);
 
-    toast.success("Credential offer sent successfully");
+    toast.success("You Account has been created successfully");
     console.log("Credential offer sent successfully");
     window.location.href = "/login";
   }
 };
+

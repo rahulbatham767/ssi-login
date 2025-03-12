@@ -7,18 +7,19 @@ import {
   handleIssuerMessages,
   handleVerifierMessages,
 } from "../utils/user_agent";
+import apiCall from "../utils/apiCall";
 
-const apiCall = async (baseUrl, method, endpoint, data = null) => {
-  try {
-    const response = await axios[method](`${baseUrl}${endpoint}`, data);
-    return response.data;
-  } catch (error) {
-    console.error("API Error:", error.response?.data || error.message);
-    throw new Error(
-      error.response?.data?.message || error.message || "Something went wrong"
-    );
-  }
-};
+// const apiCall = async (baseUrl, method, endpoint, data = null) => {
+//   try {
+//     const response = await axios[method](`${baseUrl}${endpoint}`, data);
+//     return response.data;
+//   } catch (error) {
+//     console.error("API Error:", error.response?.data || error.message);
+//     throw new Error(
+//       error.response?.data?.message || error.message || "Something went wrong"
+//     );
+//   }
+// };
 
 const useVerifierStore = create(
   (set, get) => ({
@@ -29,6 +30,7 @@ const useVerifierStore = create(
   invitation: null,
   isLoggedIn: Cookies.get("userToken") ? true : false,
   ws: null,
+  retryCount: 0,
   wsConnections: {},
   connected: false,
   connectedRoles: [], // Track which roles are connected
@@ -96,7 +98,7 @@ const useVerifierStore = create(
   },
   setConnected: (status) => set({ connected: status }),
 
-  connectWebSocket: (url, type, token) => {
+  connectWebSocket: (url, type) => {
     if (!url || (!url.startsWith("ws://") && !url.startsWith("wss://"))) {
       console.error("Invalid WebSocket URL:", url);
       return;
@@ -152,28 +154,42 @@ const useVerifierStore = create(
         // Consider adding user-facing error handling here
       }
     };
+    const MAX_RETRIES = 5;
+    // ws.onclose = () => {
+    //   console.warn(`[${new Date().toISOString()}] WebSocket closed.`);
+
+    //   set({ connected: false, ws: null });
+
+    //   if (retryCount < MAX_RETRIES) {
+    //     retryCount++;
+    //     const retryDelay = Math.min(5000 * retryCount, 30000); // Exponential backoff
+    //     console.warn(
+    //       `Reconnecting in ${
+    //         retryDelay / 1000
+    //       } seconds (attempt ${retryCount}/${MAX_RETRIES})...`
+    //     );
+    //     setTimeout(() => get().connectWebSocket(url, type, token), retryDelay);
+    //   } else {
+    //     console.error(
+    //       "Max reconnect attempts reached. WebSocket will not reconnect."
+    //     );
+    //   }
+    // };
+
 
     ws.onclose = () => {
       console.warn(`[${new Date().toISOString()}] WebSocket closed.`);
-
-      set({ connected: false, ws: null });
-
-      if (retryCount < MAX_RETRIES) {
-        retryCount++;
-        const retryDelay = Math.min(5000 * retryCount, 30000); // Exponential backoff
-        console.warn(
-          `Reconnecting in ${
-            retryDelay / 1000
-          } seconds (attempt ${retryCount}/${MAX_RETRIES})...`
-        );
-        setTimeout(() => get().connectWebSocket(url, type, token), retryDelay);
-      } else {
-        console.error(
-          "Max reconnect attempts reached. WebSocket will not reconnect."
-        );
-      }
-    };
-
+      set((state) => {
+         const updatedConnections = { ...state.wsConnections };
+         delete updatedConnections[type];
+   
+         return {
+            connected: false,
+            wsConnections: updatedConnections,
+            connectedRoles: state.connectedRoles.filter(role => role !== type),
+         };
+      });
+   };
     set({ ws });
   },
 

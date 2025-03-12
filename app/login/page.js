@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useQRCode } from "next-qrcode";
 import useVerifierStore from "../store/verifierStore";
+import toast from "react-hot-toast";
+import { checkCredential } from "../utils/apiCall";
 
 const LoginPage = () => {
   const [isCopied, setIsCopied] = useState(false);
@@ -10,10 +12,23 @@ const LoginPage = () => {
 
   const { VerifierReq, invitation, connectWebSocket } = useVerifierStore();
   const handleCopyToClipboard = () => {
+    if (!invitation || !invitation.invitation) {
+      toast.error("Link is not generated yet!", { duration: 4000 });
+      return;
+    }
+
     const invitationLink = JSON.stringify(invitation.invitation); // Serialize the invitation
-    navigator.clipboard.writeText(invitationLink);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000); // Reset the copied state after 2 seconds
+    navigator.clipboard
+      .writeText(invitationLink)
+      .then(() => {
+        setIsCopied(true);
+        toast.success("Copied to clipboard!");
+        setTimeout(() => setIsCopied(false), 2000); // Reset copied state after 2 seconds
+      })
+      .catch((error) => {
+        console.error("Clipboard Copy Failed:", error);
+        toast.error("Failed to copy link.");
+      });
   };
   console.log(invitation);
   useEffect(() => {
@@ -25,6 +40,8 @@ const LoginPage = () => {
       VerifierReq(); // Create an invitation if not available
     }
   }, [invitation, VerifierReq]);
+
+  checkCredential();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">

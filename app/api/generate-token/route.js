@@ -10,7 +10,9 @@ export async function POST(req) {
 
     const secret = process.env.NEXT_PUBLIC_JWT_SECRET_KEY;
     if (!secret) {
-      return new Response(JSON.stringify({ error: "JWT Secret is missing!" }), { status: 500 });
+      return new Response(JSON.stringify({ error: "JWT Secret is missing!" }), {
+        status: 500,
+      });
     }
 
     // Generate Credential Issue Date & Credential No.
@@ -25,6 +27,7 @@ export async function POST(req) {
       organization,
       address,
       credentialIssueDate,
+      credentialIssuer: "SSI_PORTAL",
       credentialNo,
     };
 
@@ -35,6 +38,7 @@ export async function POST(req) {
       dob,
       credentialIssueDate,
       credentialNo,
+      credentialIssuer: "SSI_PORTAL",
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 10 * 24 * 60 * 60, // 10 days expiry
     };
@@ -42,15 +46,20 @@ export async function POST(req) {
     const token = jwt.sign(usertoken, secret, { algorithm: "HS256" });
 
     // Save to MongoDB
-    console.log("Saving credential to MongoDB...",payload,token);
-    
+    console.log("Saving credential to MongoDB...", payload, token);
+
     const newCredential = new Credential({ ...payload, token });
     await newCredential.save();
-console.log("token to send is",token);
+    console.log("token to send is", token);
 
-    return new Response(JSON.stringify({ token, message: "Credential stored successfully!" }), { status: 200 });
+    return new Response(
+      JSON.stringify({ token, message: "Credential stored successfully!" }),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("❌ Error storing credential:", error);
-    return new Response(JSON.stringify({ error: "Error generating token" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Error generating token" }), {
+      status: 500,
+    });
   }
 }

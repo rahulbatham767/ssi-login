@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import useVerifierStore from "../store/verifierStore";
 import { generateJwtToken } from "../utils/template";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -31,15 +32,19 @@ export default function SignupPage() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+    // loading(true);
     if (!invitation?.invitation) {
+      // loading(false);
       console.error("❌ No invitation available");
+      toast.error("❌ No invitation available");
       setLoading(false);
       return;
     }
     const token = await generateJwtToken(formData);
     if (!token) {
       console.error("❌ Failed to generate token");
+      toast.error("❌ Failed to generate token");
+      // loading(false);
       setLoading(false);
       return;
     }
@@ -156,6 +161,7 @@ export default function SignupPage() {
               onChange={handleChange}
               className="w-full p-3 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="XYZ Pvt. Ltd."
+              required
             />
           </div>
 
@@ -175,6 +181,7 @@ export default function SignupPage() {
               className="w-full p-3 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="123, Street, City, Country"
               rows="3"
+              required
             />
           </div>
 
