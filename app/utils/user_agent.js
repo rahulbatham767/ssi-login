@@ -8,6 +8,8 @@ import {
   getCredentialID,
   getRequestCredential,
 } from "./template";
+import { checkCredential } from "./apiCall";
+import { useRouter } from "next/navigation";
 export const handleVerifierMessages = async (topic, payload) => {
   if (topic !== "ping") {
     console.log("[VERIFIER] Handling message:", topic, payload);
@@ -197,6 +199,7 @@ export const handleIssuerMessages = async (topic, payload, token) => {
   if (topic !== "ping") {
     console.log("[ISSUER] Handling message:", topic, payload);
   }
+
   if (
     topic === "connections" &&
     payload.state === "active" &&
@@ -204,23 +207,30 @@ export const handleIssuerMessages = async (topic, payload, token) => {
   ) {
     console.log("Issuer: Processing active connection");
 
-    const credentialPayload = generateCredentialPayload({
-      connection_id: payload.connection_id,
-      token: token, // Ensure token is properly defined in scope
-      issuer_did: process.env.NEXT_PUBLIC_ISSUER_DID,
-      cred_def_id: process.env.NEXT_PUBLIC_CRED_DEF_ID,
-    });
+    try {
+      console.log("Checking credential result ", checkCredentialResult);
 
-    console.log("Sending credential offer");
-    const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_ISSUER_ENDPOINT}/issue-credential-2.0/send`,
-      credentialPayload
-    );
-    console.log("response after sending credential offer", res.data);
+      const credentialPayload = generateCredentialPayload({
+        connection_id: payload.connection_id,
+        token: token, // Ensure token is properly defined in scope
+        issuer_did: process.env.NEXT_PUBLIC_ISSUER_DID,
+        cred_def_id: process.env.NEXT_PUBLIC_CRED_DEF_ID,
+      });
 
-    toast.success("You Account has been created successfully");
-    console.log("Credential offer sent successfully");
-    window.location.href = "/login";
+      console.log("Sending credential offer");
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_ISSUER_ENDPOINT}/issue-credential-2.0/send`;
+      console.log("API Endpoint:", apiUrl);
+
+      const res = await axios.post(apiUrl, credentialPayload);
+
+      console.log("Response after sending credential offer", res.data);
+      toast.success("Your Account has been created successfully");
+      console.log("Credential offer sent successfully");
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("❌ Error in handleIssuerMessages:", error);
+      toast.error("Error sending credential offer");
+    }
   }
 };
-

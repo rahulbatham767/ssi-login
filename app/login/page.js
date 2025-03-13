@@ -41,8 +41,6 @@ const LoginPage = () => {
     }
   }, [invitation, VerifierReq]);
 
-  checkCredential();
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">
       <div className="max-w-md w-full bg-white shadow-lg rounded-2xl p-6">

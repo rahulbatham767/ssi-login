@@ -4,6 +4,7 @@ import axios from "axios";
 import useVerifierStore from "../store/verifierStore";
 import { generateJwtToken } from "../utils/template";
 import toast from "react-hot-toast";
+import { checkCredential } from "../utils/apiCall";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -40,6 +41,13 @@ export default function SignupPage() {
       setLoading(false);
       return;
     }
+    const checkCredentialResult = await checkCredential();
+
+    if (checkCredentialResult.includes("SSI_PORTEL")) {
+      console.log("Credential already exists");
+      toast.error("Credential already exists");
+      return;
+    }
     const token = await generateJwtToken(formData);
     if (!token) {
       console.error("❌ Failed to generate token");
@@ -54,7 +62,7 @@ export default function SignupPage() {
     setToken(token);
     setLoading(false);
   };
-
+  checkCredential();
   useEffect(() => {
     if (!invitation || Object.keys(invitation).length === 0) {
       registerReq();

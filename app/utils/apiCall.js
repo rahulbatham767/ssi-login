@@ -27,12 +27,32 @@ const apiCall = async (baseUrl, method, endpoint, data = null) => {
 export default apiCall;
 
 export const checkCredential = async () => {
-  const response = await apiCall(
-    process.env.NEXT_PUBLIC_HOLDER_ENDPOINT,
-    "get",
-    "/credentials"
-  );
-  const token = response.results.map((result) => result.attrs.credentialIssuer);
+  try {
+    console.log("🔍 Checking credentials...");
 
-  console.log(token);
+    const response = await apiCall(
+      process.env.NEXT_PUBLIC_HOLDER_ENDPOINT,
+      "get",
+      "/credentials"
+    );
+
+    if (!response || !response.results) {
+      console.error(
+        "❌ Error: Invalid response from /credentials API:",
+        response
+      );
+      return [];
+    }
+
+    const issuedByTokens = response.results
+      .map((result) => result?.attrs?.IssuedBy)
+      .filter(Boolean); // Removes undefined or null values
+
+    console.log("✅ Found credentials:", issuedByTokens);
+
+    return issuedByTokens;
+  } catch (error) {
+    console.error("❌ Error fetching credentials:", error);
+    return [];
+  }
 };
