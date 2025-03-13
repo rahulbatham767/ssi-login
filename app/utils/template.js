@@ -128,7 +128,10 @@ export const generateCredentialPayload = ({
   connection_id,
   credential_preview: {
     "@type": "issue-credential/2.0/credential-preview",
-    attributes: [{ name: "token", value: token }],
+    attributes: [
+      { name: "token", value: token },
+      { name: "IssuedBy", value: "SSI_PORTEL" },
+    ],
   },
   filter: {
     indy: { cred_def_id, issuer_did },
