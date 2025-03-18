@@ -8,8 +8,7 @@ import {
   getCredentialID,
   getRequestCredential,
 } from "./template";
-import { checkCredential } from "./apiCall";
-import { useRouter } from "next/navigation";
+
 export const handleVerifierMessages = async (topic, payload) => {
   if (topic !== "ping") {
     console.log("[VERIFIER] Handling message:", topic, payload);
@@ -116,13 +115,16 @@ export const handleHolderMessages = async (topic, payload) => {
             textAlign: "center",
             position: "fixed",
             top: "50%",
-            left: "38%",
+            left: "33%",
             zIndex: 9999,
           }}
         >
           <h3 style={{ marginBottom: "10px" }}>
             {" "}
-            <strong>Do you want to approve this credential?</strong>
+            <strong>
+              This Website asked for these fields from your credential.
+              <br /> Do you want to approve this?
+            </strong>
           </h3>
           <pre
             style={{
@@ -202,14 +204,13 @@ export const handleIssuerMessages = async (topic, payload, token) => {
 
   if (
     topic === "connections" &&
-    payload.state === "active" &&
+    payload &&
+    (payload.state === "active" || payload.state === "deleted") &&
     payload.connection_id
   ) {
     console.log("Issuer: Processing active connection");
 
     try {
-      console.log("Checking credential result ", checkCredentialResult);
-
       const credentialPayload = generateCredentialPayload({
         connection_id: payload.connection_id,
         token: token, // Ensure token is properly defined in scope
